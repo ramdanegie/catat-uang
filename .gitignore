@@ -1,0 +1,20 @@
+node_modules/
+
+# Env — jangan pernah commit kredensial
+.env
+.env.*
+!.env.example
+
+# Build output
+apps/web/build/
+apps/web/.svelte-kit/
+apps/api/data/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Screenshot lokal
+SCR-*.png
+
+*.log

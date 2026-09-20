@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    ports:
+      - '3001:3001'
+    environment:
+      PORT: 3001
+      DB_PATH: /data/app.db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET di .env / environment}
+      JWT_EXPIRES_IN: 30d
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    volumes:
+      - app-data:/data
+    restart: unless-stopped
+
+volumes:
+  app-data:

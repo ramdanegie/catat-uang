@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+/* dark: dikendalikan class `.dark` pada <html> (diatur theme.ts + script anti-FOUC) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--font-sans: 'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	/* Google Red #EA4335 — primary brand (soft tints untuk permukaan besar,
+	   warna penuh hanya untuk aksen: tombol, ikon, teks, progress) */
+	--color-brand-50: #fce8e6;
+	--color-brand-100: #fad2cf;
+	--color-brand-200: #f6aea9;
+	--color-brand-300: #f28b82;
+	--color-brand-400: #e57373;
+	--color-brand-500: #ea4335;
+	--color-brand-600: #d93025;
+	--color-brand-700: #a50e0e;
+	--color-brand-800: #7a1f1a;
+	--color-brand-900: #5c1512;
+	--color-brand-950: #420d0a;
+
+	/* Google Green #34A853 — success / normal */
+	--color-ggreen-50: #e6f4ea;
+	--color-ggreen-100: #ceead6;
+	--color-ggreen-200: #a8dab5;
+	--color-ggreen-300: #81c995;
+	--color-ggreen-500: #34a853;
+	--color-ggreen-600: #1e8e3e;
+	--color-ggreen-700: #188038;
+
+	/* Google Yellow #FBBC04 — warning */
+	--color-gyellow-50: #fef7e0;
+	--color-gyellow-100: #fdefc3;
+	--color-gyellow-200: #fde293;
+	--color-gyellow-400: #fcc934;
+	--color-gyellow-500: #fbbc04;
+	--color-gyellow-700: #8a5600;
+
+	/* Google Red #EA4335 — critical / exceeded / danger */
+	--color-gred-50: #fce8e6;
+	--color-gred-100: #fad2cf;
+	--color-gred-200: #f6aea9;
+	--color-gred-300: #f28b82;
+	--color-gred-500: #ea4335;
+	--color-gred-600: #d93025;
+	--color-gred-700: #a50e0e;
+}
+
+html {
+	-webkit-tap-highlight-color: transparent;
+}
+
+body {
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+input,
+select,
+textarea,
+button {
+	font-family: inherit;
+}

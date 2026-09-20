@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="id">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#ea4335" />
+		<meta name="text-scale" content="scale" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap"
+			rel="stylesheet"
+		/>
+		<script>
+			// Anti-FOUC: terapkan theme sebelum render pertama.
+			// Default 'system' -> ikuti prefers-color-scheme OS.
+			try {
+				var p = JSON.parse(localStorage.getItem('cuh.prefs.v1') || '{}');
+				var t = p.theme || 'system';
+				var dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+				if (dark) document.documentElement.classList.add('dark');
+				document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+			} catch (e) {}
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
