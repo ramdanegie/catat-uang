@@ -3,6 +3,17 @@
 Satu service Bun: backend Elysia (`apps/api`) men-serve API `/api/v1` +
 frontend statis (`apps/web/build`) di satu port. Database SQLite.
 
+Dua target deploy yang didukung:
+
+| Target | Runtime | Database | Entry |
+|---|---|---|---|
+| Docker / VPS / PaaS | Bun, satu proses | File SQLite di volume | `apps/api/src/index.ts` |
+| Vercel | Node serverless | Turso (libSQL remote) | `api/[...path].ts` |
+
+Rute Elysia didefinisikan sekali di `apps/api/src/app.ts` dan dipakai kedua
+entry. Driver database juga satu (`@libsql/client`): URL `file:` untuk lokal,
+`libsql://` untuk Turso.
+
 ## Opsi A — Docker (disarankan)
 
 ```bash
@@ -63,7 +74,106 @@ uang.contoh.id {
 }
 ```
 
-## Opsi C — Hosting / PaaS
+## Opsi C — Vercel + Turso (CI/CD otomatis)
+
+Vercel tidak punya disk persisten dan tidak menjalankan Bun, jadi jalur ini
+memakai **Vercel Functions (Node)** untuk API dan **Turso** (libSQL, SQLite
+terkelola) untuk database. Frontend statis diserve dari CDN Vercel.
+
+Apa yang sudah disiapkan repo ini:
+
+- `api/[...path].ts` — menangkap seluruh `/api/*`; default-export instance
+  Elysia, dan runtime Node Vercel memanggil `.fetch` dengan Request/Response
+  Web Standard.
+- `vercel.json` — build command, output `apps/web/build`, rewrite SPA, dan
+  rewrite `/health` → `/api/health`.
+- `package.json` root — npm workspaces supaya Vercel memasang kedua app.
+  `vercel-build` menjalankan migrasi Drizzle lalu build frontend.
+
+### 1. Siapkan database Turso
+
+Lewat Vercel Marketplace (paling ringkas — env var terisi otomatis):
+
+```bash
+vercel integration add turso
+```
+
+Terima syarat di browser saat diminta, lalu pilih paket **Free**. Integrasi
+mengisi `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` di project.
+
+Atau lewat Turso CLI bila ingin kelola sendiri:
+
+```bash
+brew install tursodatabase/tap/turso   # atau: curl -sSfL https://get.tur.so/install.sh | bash
+turso auth login
+turso db create catat-uang
+turso db show catat-uang --url                 # -> TURSO_DATABASE_URL
+turso db tokens create catat-uang              # -> TURSO_AUTH_TOKEN
+```
+
+### 2. Buat project Vercel & set environment
+
+```bash
+vercel link --yes --project catat-uang
+
+vercel env add JWT_SECRET production --value "$(openssl rand -hex 32)" --yes
+vercel env add JWT_EXPIRES_IN production --value 30d --yes
+# Lewati dua baris ini bila memakai integrasi Marketplace.
+vercel env add TURSO_DATABASE_URL production --value "libsql://..." --yes
+vercel env add TURSO_AUTH_TOKEN production --value "..." --yes
+```
+
+`VITE_API_URL` **tidak perlu di-set** — `vercel-build` sudah memaksa nilai
+kosong supaya frontend memanggil API same-origin di `/api/v1`.
+
+Ulangi `vercel env add ... preview` bila ingin preview deployment berfungsi
+penuh (butuh database Turso terpisah agar data preview tidak mencemari
+produksi).
+
+### 3. Nyalakan CI/CD (auto-deploy tiap push)
+
+Vercel Git Integration sudah cukup — tidak perlu GitHub Actions.
+
+1. Pasang Vercel GitHub App dan beri akses ke repo:
+   <https://github.com/apps/vercel/installations/new>
+2. Hubungkan repo ke project:
+
+   ```bash
+   vercel git connect https://github.com/<user>/catat-uang
+   ```
+
+Setelah tersambung:
+
+- push ke `main` → **Production deployment** otomatis.
+- push ke branch lain / buka PR → **Preview deployment** otomatis dengan URL
+  sendiri, dan Vercel mengomentari PR-nya.
+
+Deploy manual sekali jalan tetap bisa: `vercel deploy --prod`.
+
+### 4. Setelah domain final diketahui
+
+```bash
+vercel env add FRONTEND_URL production --value "https://<domain>" --yes
+vercel deploy --prod
+```
+
+Lalu daftarkan `https://<domain>/api/v1/auth/google/callback` di Google Cloud
+Console bila memakai login Google (lihat bagian *Login Google*).
+
+### Catatan penting jalur Vercel
+
+- **Migrasi jalan saat build**, bukan saat request (`npm run db:migrate -w api`
+  di dalam `vercel-build`). Jadi env Turso harus tersedia di build-time —
+  Vercel memang menyediakannya.
+- **Hash password berbeda dari versi Bun.** Kode memakai scrypt (`node:crypto`)
+  supaya jalan di Bun maupun Node. Database lama berisi hash `Bun.password`
+  tidak bisa dipakai — gunakan database baru.
+- **Free tier Turso punya batas**. Pantau kuota row-read/storage di dashboard
+  Turso sebelum trafik naik.
+- Cold start Vercel + Turso lewat jaringan lebih lambat daripada SQLite lokal.
+  Bila butuh latensi rendah dan data besar, Opsi A/B/D lebih cocok.
+
+## Opsi D — Hosting / PaaS lain
 
 Aplikasi ini **satu container, satu port, SQLite di disk**. Syarat hosting:
 
@@ -72,8 +182,9 @@ Aplikasi ini **satu container, satu port, SQLite di disk**. Syarat hosting:
    hilang setiap redeploy — SQLite bukan database eksternal).
 3. Mengizinkan set environment variable (minimal `JWT_SECRET`).
 
-> Platform serverless/edge tanpa disk persisten (Vercel, Netlify, Cloudflare
-> Workers) **tidak cocok** untuk service ini apa adanya.
+> Platform serverless/edge tanpa disk persisten (Netlify, Cloudflare Workers)
+> **tidak cocok** untuk jalur ini — mereka butuh database remote seperti pada
+> [Opsi C](#opsi-c--vercel--turso-cicd-otomatis).
 
 ### Railway
 
@@ -151,7 +262,9 @@ Panel ini membaca `docker-compose.yml` apa adanya:
 | Var | Wajib | Default | Keterangan |
 |---|---|---|---|
 | `PORT` | – | `3000` | Port listen (compose memakai `3001`) |
-| `DB_PATH` | – | `./data/app.db` | Lokasi file SQLite (mount volume di prod!) |
+| `DB_PATH` | – | `./data/app.db` | Lokasi file SQLite (mount volume di prod!). Diabaikan bila `TURSO_DATABASE_URL` diisi |
+| `TURSO_DATABASE_URL` | Bila Vercel | – | URL Turso (`libsql://...`); mengaktifkan mode database remote |
+| `TURSO_AUTH_TOKEN` | Bila Turso | – | Token akses database Turso |
 | `JWT_SECRET` | **Ya (prod)** | `dev-secret-change-me` | Secret JWT; server memberi warning bila masih default |
 | `JWT_EXPIRES_IN` | – | `30d` | Masa berlaku token |
 | `FRONTEND_URL` | Bila Google login | `http://localhost:5173` | Origin publik web, tujuan redirect OAuth |
@@ -177,8 +290,15 @@ docker run --rm -v catat_uang_app-data:/data -v "$PWD/backup:/backup" \
   alpine tar czf "/backup/app-$(date +%F).db.tgz" -C /data app.db
 ```
 
+Di Turso, backup memakai CLI-nya:
+
+```bash
+turso db shell catat-uang .dump > "backup/app-$(date +%F).sql"
+```
+
 Aturan minimal: backup harian, simpan di disk berbeda dari server, uji restore
-berkala. Migrasi Drizzle (`apps/api/drizzle/`) otomatis jalan saat boot.
+berkala. Migrasi Drizzle (`apps/api/drizzle/`) jalan saat boot di jalur
+Bun/Docker, dan saat build di jalur Vercel.
 
 ## Verifikasi pasca-deploy
 
