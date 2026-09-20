@@ -1,4 +1,5 @@
 import jwt from '@elysiajs/jwt';
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { users } from '../db/schema';
@@ -60,10 +61,40 @@ export function authDerive() {
 	};
 }
 
+// Hash memakai scrypt dari `node:crypto` (bukan `Bun.password`) agar kode yang
+// sama jalan di Bun maupun Node/serverless. Format: scrypt$N$r$p$salt$hash.
+const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 64 } as const;
+
 export async function hashPassword(plain: string) {
-	return Bun.password.hash(plain);
+	const salt = randomBytes(16);
+	const key = await scryptAsync(plain, salt, SCRYPT.keylen, SCRYPT);
+	return `scrypt$${SCRYPT.N}$${SCRYPT.r}$${SCRYPT.p}$${salt.toString('base64')}$${key.toString('base64')}`;
 }
 
 export async function verifyPassword(plain: string, hash: string) {
-	return Bun.password.verify(plain, hash);
+	const parts = hash.split('$');
+	if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
+	const [, N, r, p, saltB64, keyB64] = parts;
+	const expected = Buffer.from(keyB64, 'base64');
+	const actual = await scryptAsync(plain, Buffer.from(saltB64, 'base64'), expected.length, {
+		N: Number(N),
+		r: Number(r),
+		p: Number(p)
+	}).catch(() => null);
+	if (!actual || actual.length !== expected.length) return false;
+	return timingSafeEqual(actual, expected);
+}
+
+function scryptAsync(
+	plain: string,
+	salt: Buffer,
+	keylen: number,
+	opts: { N: number; r: number; p: number }
+): Promise<Buffer> {
+	return new Promise((resolve, reject) => {
+		// maxmem default (32MB) terlalu kecil untuk N=16384, r=8.
+		scrypt(plain, salt, keylen, { ...opts, maxmem: 128 * opts.N * opts.r * 2 }, (err, key) =>
+			err ? reject(err) : resolve(key as Buffer)
+		);
+	});
 }

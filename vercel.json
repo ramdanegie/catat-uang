@@ -1,0 +1,15 @@
+{
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"buildCommand": "npm run vercel-build",
+	"outputDirectory": "apps/web/build",
+	"functions": {
+		"api/**/*.ts": {
+			"memory": 1024,
+			"maxDuration": 30
+		}
+	},
+	"rewrites": [
+		{ "source": "/health", "destination": "/api/health" },
+		{ "source": "/((?!api/).*)", "destination": "/index.html" }
+	]
+}

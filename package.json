@@ -1,0 +1,20 @@
+{
+	"name": "catat-uang",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"workspaces": [
+		"apps/*"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"db:migrate": "npm run db:migrate -w api",
+		"build:web": "npm run build -w web",
+		"vercel-build": "npm run db:migrate -w api && VITE_API_URL= npm run build -w web"
+	},
+	"devDependencies": {
+		"@types/node": "^24"
+	}
+}
