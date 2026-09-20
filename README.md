@@ -82,14 +82,25 @@ terkelola) untuk database. Frontend statis diserve dari CDN Vercel.
 
 Apa yang sudah disiapkan repo ini:
 
-- `api/index.ts` — satu function untuk seluruh API; default-export instance
+- `api/index.mjs` — satu function untuk seluruh API; default-export instance
   Elysia, dan runtime Node Vercel memanggil `.fetch` dengan Request/Response
   Web Standard.
 - `vercel.json` — build command, output `apps/web/build`, rewrite `/api/(.*)`
   ke function (URL asli tetap utuh, jadi Elysia melihat `/api/v1/...`),
   rewrite `/health` → `/api/health`, dan fallback SPA ke `index.html`.
 - `package.json` root — npm workspaces supaya Vercel memasang kedua app.
-  `vercel-build` menjalankan migrasi Drizzle lalu build frontend.
+  `vercel-build` menjalankan tiga langkah berurutan: bundle API → migrasi
+  Drizzle → build frontend.
+
+Dua hal yang tampak berlebihan tapi memang perlu:
+
+- **API di-bundle esbuild dulu** (`npm run build:api` → `api/_generated/app.mjs`).
+  File-tracer Vercel tidak mengikuti impor TypeScript relatif ke luar direktori
+  `api/`, jadi impor langsung `../apps/api/src/app` membuat function ter-deploy
+  tanpa source-nya (`ERR_MODULE_NOT_FOUND` saat runtime).
+- **Rewrite, bukan catch-all nama file.** Di direktori `api/` bare, Vercel
+  menerjemahkan `[...path].ts` sebagai satu segmen (`^/api/([^/]+)$`), sehingga
+  `/api/v1/expenses` jatuh ke 404. Konvensi itu hanya berlaku di Next.js.
 
 ### 1. Siapkan database Turso
 
@@ -173,6 +184,15 @@ Console bila memakai login Google (lihat bagian *Login Google*).
   Turso sebelum trafik naik.
 - Cold start Vercel + Turso lewat jaringan lebih lambat daripada SQLite lokal.
   Bila butuh latensi rendah dan data besar, Opsi A/B/D lebih cocok.
+- **Preview deployment memakai database yang sama** bila `TURSO_DATABASE_URL`
+  di-set untuk environment Preview. Buat database Turso terpisah bila tidak
+  ingin data preview bercampur dengan produksi.
+
+Verifikasi jalur ini memakai skrip E2E yang sama dengan lokal:
+
+```bash
+cd apps/api && BASE=https://<domain> ./scripts/e2e.sh   # 21 asersi
+```
 
 ## Opsi D — Hosting / PaaS lain
 
