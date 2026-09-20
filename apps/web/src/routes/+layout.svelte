@@ -30,6 +30,12 @@
 	// Sidebar desktop bisa diciutkan; preferensi tersimpan di browser.
 	let collapsed = $state(browser && localStorage.getItem('cuh.sidebar.v1') === '1');
 	let restoring = $state(false);
+	// Restore sesi hanya boleh dicoba sekali per load. Tanpa penanda ini,
+	// pengunjung tanpa token membuat efek di bawah berputar tanpa henti:
+	// restoring true -> restoreSession() selesai seketika -> restoring false
+	// -> syarat terpenuhi lagi. Svelte menghentikannya dengan
+	// `effect_update_depth_exceeded`, dan halaman berakhir putih.
+	let restoreTried = $state(false);
 
 	function toggleSidebar() {
 		collapsed = !collapsed;
@@ -53,8 +59,9 @@
 	$effect(() => {
 		if (!browser || hideChrome) return;
 		// Mode API: coba pulihkan sesi dari token sebelum menghakimi belum-login.
-		if (apiMode && !$authUser && !restoring) {
+		if (apiMode && !$authUser && !restoreTried && !restoring) {
 			restoring = true;
+			restoreTried = true;
 			restoreSession().finally(() => {
 				restoring = false;
 			});
