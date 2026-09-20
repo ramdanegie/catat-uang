@@ -12,9 +12,11 @@
 	"scripts": {
 		"db:migrate": "npm run db:migrate -w api",
 		"build:web": "npm run build -w web",
-		"vercel-build": "npm run db:migrate -w api && VITE_API_URL= npm run build -w web"
+		"vercel-build": "npm run build:api && npm run db:migrate -w api && VITE_API_URL= npm run build -w web",
+		"build:api": "esbuild apps/api/src/app.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=api/_generated/app.mjs"
 	},
 	"devDependencies": {
-		"@types/node": "^24"
+		"@types/node": "^24",
+		"esbuild": "^0.25.0"
 	}
 }

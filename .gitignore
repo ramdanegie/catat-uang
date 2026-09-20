@@ -20,3 +20,6 @@ SCR-*.png
 *.log
 .vercel
 .env*.local
+
+# Bundle API untuk Vercel Function (dihasilkan `npm run build:api`)
+api/_generated/
