@@ -74,7 +74,7 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
 		return ok({ logged_out: true });
 	})
 	.get('/google/status', () => ok({ enabled: googleConfigured() }))
-	.get('/google/start', ({ cookie }) => {
+	.get('/google/start', ({ cookie, request }) => {
 		// Tanpa pengecekan di frontend: bila belum dikonfigurasi, kembalikan
 		// user ke halaman login dengan pesan error (bukan JSON mentah).
 		if (!googleConfigured()) {
@@ -84,7 +84,17 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
 			);
 		}
 		const state = randomState();
-		cookie.cu_oauth_state?.set({ value: state, httpOnly: true, path: '/', maxAge: 600 });
+		// sameSite lax: callback Google adalah navigasi GET tingkat atas, jadi
+		// cookie tetap terkirim. secure hanya bila origin sudah HTTPS, supaya dev
+		// lokal di http://localhost tidak kehilangan cookie state.
+		cookie.cu_oauth_state?.set({
+			value: state,
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: new URL(request.url).protocol === 'https:',
+			path: '/',
+			maxAge: 600
+		});
 		return Response.redirect(buildAuthUrl(state), 302);
 	})
 	.get(

@@ -2,6 +2,7 @@
 	import { budgetItems, budgets, categories, expenses, monthStr, upsertBudget } from '$lib/dummy/store';
 	import { categoryById } from '$lib/api/mockClient';
 	import { ApiError } from '$lib/api/client';
+	import AppIcon from '$lib/components/AppIcon.svelte';
 	import CurrencyInput from '$lib/components/CurrencyInput.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -13,7 +14,7 @@
 	let editing = $state(false);
 	let saveError = $state('');
 	let totalNum = $state(5000000);
-	let perCat: Record<string, string> = $state({});
+	let perCat: Record<string, number> = $state({});
 
 	const budget = $derived($budgets.find((b) => b.month === month));
 	const items = $derived($budgetItems.filter((i) => i.budget_id === budget?.id));
@@ -24,9 +25,9 @@
 		editing = true;
 		totalNum = budget ? budget.total_amount : 5000000;
 		perCat = {};
-		for (const c of $categories) {
-			const found = items.find((i) => i.category_id === c.id);
-			perCat[c.id] = found ? String(found.amount) : '';
+		// Hanya kategori aktif — sama dengan daftar yang dirender di form.
+		for (const c of $categories.filter((c) => c.is_active)) {
+			perCat[c.id] = items.find((i) => i.category_id === c.id)?.amount ?? 0;
 		}
 	}
 
@@ -37,7 +38,7 @@
 		upsertBudget(
 			month,
 			totalNum,
-			Object.entries(perCat).map(([category_id, v]) => ({ category_id, amount: Number(String(v).replace(/[^0-9]/g, '')) || 0 }))
+			Object.entries(perCat).map(([category_id, amount]) => ({ category_id, amount }))
 		)
 			.then(() => {
 				editing = false;
@@ -48,7 +49,7 @@
 	}
 </script>
 
-<PageHeader title="Anggaran Bulanan" subtitle="Atur batas sebelum uang habis" />
+<PageHeader title="Budget Bulanan" subtitle="Atur batas sebelum uang habis" />
 
 <div class="flex gap-2 rounded-2xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
 	<label class="flex flex-1 items-center gap-2 text-xs">Bulan
@@ -72,8 +73,13 @@
 			<p class="text-xs font-semibold">Budget per kategori (opsional)</p>
 			{#each $categories.filter((c) => c.is_active) as c (c.id)}
 				<label class="flex items-center gap-2 text-xs">
-					<span class="w-32 truncate">{c.icon} {c.name}</span>
-					<input inputmode="numeric" bind:value={perCat[c.id]} placeholder="0" class="flex-1 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 tabular-nums dark:border-zinc-700 dark:bg-zinc-900" />
+					<span class="flex w-32 shrink-0 items-center gap-1.5 truncate">
+						<AppIcon name={c.icon} size={16} />
+						<span class="truncate">{c.name}</span>
+					</span>
+					<span class="flex-1 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900">
+						<CurrencyInput id={`budget-cat-${c.id}`} bind:value={perCat[c.id]} inputClass="text-xs" />
+					</span>
 				</label>
 			{/each}
 		</div>
@@ -112,9 +118,12 @@
 				{@const c = categoryById(pc.category_id)}
 				{@const m = STATUS_META[pc.status]}
 				<div class="rounded-2xl border border-zinc-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-					<div class="flex items-center justify-between text-xs">
-						<span class="font-bold">{c?.icon} {c?.name}</span>
-						<span class="rounded-full px-2 py-0.5 text-[10px] font-bold {m.classes}">{m.label} · {pc.pct.toFixed(0)}%</span>
+					<div class="flex items-center justify-between gap-2 text-xs">
+						<span class="flex min-w-0 items-center gap-1.5 font-bold">
+							<AppIcon name={c?.icon ?? 'shapes'} size={16} />
+							<span class="truncate">{c?.name}</span>
+						</span>
+						<span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold {m.classes}">{m.label} · {pc.pct.toFixed(0)}%</span>
 					</div>
 					<div class="mt-2"><ProgressBar value={pc.used} max={pc.limit} barClass={m.bar} /></div>
 					<div class="mt-1.5 flex justify-between text-[11px] text-zinc-500">

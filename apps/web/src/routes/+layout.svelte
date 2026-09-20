@@ -167,8 +167,10 @@
 			</div>
 		</aside>
 
-		<!-- Topbar mobile: logo + toggle tema -->
-		<header class="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-950/90">
+		<!-- Topbar mobile: logo + toggle tema. Sengaja tidak sticky — ikut
+		     tergulung hilang saat scroll supaya layar HP lega; navigasi tetap
+		     terjangkau lewat BottomNav yang menempel di bawah. -->
+		<header class="border-b border-zinc-200 bg-white/90 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-950/90">
 			<div class="mx-auto flex max-w-md items-center gap-2 px-4 py-2.5">
 				<a href="/dashboard" class="flex min-w-0 items-center gap-2">
 					<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white">

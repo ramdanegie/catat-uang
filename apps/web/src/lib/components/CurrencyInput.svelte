@@ -43,8 +43,12 @@
 	}
 </script>
 
-<div class="flex items-center gap-2">
-	<span class="shrink-0 text-xl font-bold">Rp</span>
+<!-- inputClass dipasang di wrapper agar prefix "Rp" ikut berskala: ukurannya
+     relatif (em) terhadap ukuran angka, jadi hierarki visualnya konsisten di
+     semua pemakaian — dari input besar di form catat sampai baris kecil di
+     budget per kategori. -->
+<div class="flex items-center gap-1.5 {inputClass}">
+	<span class="shrink-0 text-[0.72em] font-bold opacity-70">Rp</span>
 	<input
 		bind:this={el}
 		{id}
@@ -55,6 +59,6 @@
 		{autofocus}
 		value={fmt(value)}
 		oninput={onInput}
-		class="w-full min-w-0 bg-transparent font-extrabold tabular-nums outline-none {inputClass}"
+		class="w-full min-w-0 bg-transparent font-extrabold tabular-nums outline-none"
 	/>
 </div>

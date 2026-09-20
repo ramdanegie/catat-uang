@@ -90,8 +90,12 @@
 		</div>
 	</div>
 
-	<div class="grid grid-cols-2 gap-3">
-		<label class="block">
+	<!-- Satu kolom di layar sempit: kontrol tanggal native punya lebar intrinsik
+	     besar, dan item grid (min-width:auto) tidak boleh menyusut di bawahnya —
+	     dua kolom membuatnya meluber ke kolom metode bayar di browser HP.
+	     `min-w-0` menjaga keduanya tetap bisa menyusut saat sudah dua kolom. -->
+	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+		<label class="block min-w-0">
 			<span class="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Tanggal</span>
 			<input
 				type="date"
@@ -99,7 +103,7 @@
 				class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none focus:border-brand-400 dark:border-zinc-700 dark:bg-zinc-900"
 			/>
 		</label>
-		<label class="block">
+		<label class="block min-w-0">
 			<span class="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Metode bayar</span>
 			<select bind:value={payment_method} class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-900">
 				{#each PAYMENT_METHODS as m (m)}<option value={m}>{m}</option>{/each}
