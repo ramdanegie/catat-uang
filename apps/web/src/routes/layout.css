@@ -63,3 +63,30 @@ textarea,
 button {
 	font-family: inherit;
 }
+
+/* Safari iOS otomatis men-zoom halaman saat field dengan font di bawah 16px
+   difokuskan. Di lebar HP, paksa minimal 16px.
+   - `:not(...)` dipakai agar spesifisitas melampaui utility Tailwind seperti
+     `text-sm`, yang kalau tidak akan tetap menang atas selektor elemen polos.
+   - `max(16px, 1em)` menaikkan yang kekecilan tanpa mengecilkan yang sengaja
+     besar: `1em` mengacu ke ukuran font induk, jadi input nominal di dalam
+     wrapper `text-3xl` tetap besar. */
+@media (max-width: 767px) {
+	input:not([type='checkbox']):not([type='radio']),
+	select:not([hidden]),
+	textarea:not([hidden]) {
+		font-size: max(16px, 1em);
+	}
+}
+
+/* Kontrol tanggal/waktu native memakai lebar intrinsiknya sendiri dan
+   mengabaikan width:100%, sehingga barisnya lebih panjang dari field lain di
+   HP. Paksa ikut lebar kontainer. */
+input[type='date'],
+input[type='month'],
+input[type='time'] {
+	-webkit-appearance: none;
+	appearance: none;
+	min-width: 0;
+	max-width: 100%;
+}

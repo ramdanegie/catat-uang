@@ -107,8 +107,17 @@ export async function dummyLogout() {
 }
 
 // Pulihkan sesi saat reload (mode API): token -> /me -> sync.
+//
+// Wajib jalan walau `authUser` sudah terisi dari localStorage: data server
+// (categories, expenses, budgets, ...) TIDAK dipersist, jadi tanpa sync di sini
+// halaman hasil reload tampil kosong — mis. daftar kategori di form catat.
 export async function restoreSession(): Promise<boolean> {
-	if (!apiMode || !getToken() || get(authUser)) return !!get(authUser);
+	if (!apiMode) return !!get(authUser);
+	if (!getToken()) {
+		// authUser tersisa di localStorage tapi token sudah hilang: sesi mati.
+		authUser.set(null);
+		return false;
+	}
 	try {
 		const data = await api<{ user: MeResponse['user'] }>('/api/v1/auth/me');
 		authUser.set(toUser(data.user));

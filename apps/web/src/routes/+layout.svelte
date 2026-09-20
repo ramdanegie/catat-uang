@@ -58,8 +58,9 @@
 
 	$effect(() => {
 		if (!browser || hideChrome) return;
-		// Mode API: coba pulihkan sesi dari token sebelum menghakimi belum-login.
-		if (apiMode && !$authUser && !restoreTried && !restoring) {
+		// Mode API: selalu pulihkan sesi sekali per load — verifikasi token ke
+		// /me sekaligus menarik ulang data server yang tidak dipersist.
+		if (apiMode && !restoreTried && !restoring) {
 			restoring = true;
 			restoreTried = true;
 			restoreSession().finally(() => {
