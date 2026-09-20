@@ -289,7 +289,7 @@ Panel ini membaca `docker-compose.yml` apa adanya:
 | `JWT_SECRET` | **Ya (prod)** | `dev-secret-change-me` | Secret JWT; server memberi warning bila masih default |
 | `JWT_EXPIRES_IN` | – | `30d` | Masa berlaku token |
 | `FRONTEND_URL` | Bila Google login | `http://localhost:5173` | Origin publik web, tujuan redirect OAuth |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | Bila Google login | – | Kredensial OAuth; tombol Google otomatis sembunyi bila kosong |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | Bila Google login | – | Kredensial OAuth; bila kosong, tombol Google tetap tampil tapi `/auth/google/start` memantulkan kembali ke `/login` dengan pesan “belum dikonfigurasi” |
 | `STATIC_DIR` | – | `../web/build` | Folder build frontend yang diserve |
 | `VITE_API_URL` (build-time web) | – | – | Kosong = same-origin (wajib prod); URL absolut hanya untuk dev terpisah; unset = mode dummy |
 
@@ -299,7 +299,11 @@ Panel ini membaca `docker-compose.yml` apa adanya:
 2. **Authorized redirect URIs** tambahkan persis:
    `https://DOMAIN_KAMU/api/v1/auth/google/callback`
 3. Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (sama persis dengan URI di atas), dan `FRONTEND_URL=https://DOMAIN_KAMU`, lalu restart service.
-4. Tombol “Masuk/Daftar dengan Google” muncul otomatis di halaman auth; avatar profil diambil dari foto Google bila ada (fallback inisial nama).
+4. Tombol “Masuk/Daftar dengan Google” tampil di halaman auth selama frontend
+   berjalan mode backend; avatar profil diambil dari foto Google bila ada
+   (fallback inisial nama). Cek konfigurasi server lewat
+   `/api/v1/auth/google/status` — frontend belum memakai endpoint ini untuk
+   menyembunyikan tombol.
 
 Alur: `/api/v1/auth/google/start` (302 ke Google + cookie state CSRF) → callback tukar kode → find-or-create user by `google_id` (tautkan via email bila sudah ada) → redirect `FRONTEND_URL/login/callback#token=JWT` (fragment, tidak masuk server log) → SPA verifikasi `/me` + sync.
 
