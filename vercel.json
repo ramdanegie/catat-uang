@@ -3,13 +3,14 @@
 	"buildCommand": "npm run vercel-build",
 	"outputDirectory": "apps/web/build",
 	"functions": {
-		"api/**/*.ts": {
+		"api/index.ts": {
 			"memory": 1024,
 			"maxDuration": 30
 		}
 	},
 	"rewrites": [
 		{ "source": "/health", "destination": "/api/health" },
+		{ "source": "/api/(.*)", "destination": "/api" },
 		{ "source": "/((?!api/).*)", "destination": "/index.html" }
 	]
 }

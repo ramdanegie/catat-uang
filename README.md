@@ -8,7 +8,7 @@ Dua target deploy yang didukung:
 | Target | Runtime | Database | Entry |
 |---|---|---|---|
 | Docker / VPS / PaaS | Bun, satu proses | File SQLite di volume | `apps/api/src/index.ts` |
-| Vercel | Node serverless | Turso (libSQL remote) | `api/[...path].ts` |
+| Vercel | Node serverless | Turso (libSQL remote) | `api/index.ts` |
 
 Rute Elysia didefinisikan sekali di `apps/api/src/app.ts` dan dipakai kedua
 entry. Driver database juga satu (`@libsql/client`): URL `file:` untuk lokal,
@@ -82,11 +82,12 @@ terkelola) untuk database. Frontend statis diserve dari CDN Vercel.
 
 Apa yang sudah disiapkan repo ini:
 
-- `api/[...path].ts` — menangkap seluruh `/api/*`; default-export instance
+- `api/index.ts` — satu function untuk seluruh API; default-export instance
   Elysia, dan runtime Node Vercel memanggil `.fetch` dengan Request/Response
   Web Standard.
-- `vercel.json` — build command, output `apps/web/build`, rewrite SPA, dan
-  rewrite `/health` → `/api/health`.
+- `vercel.json` — build command, output `apps/web/build`, rewrite `/api/(.*)`
+  ke function (URL asli tetap utuh, jadi Elysia melihat `/api/v1/...`),
+  rewrite `/health` → `/api/health`, dan fallback SPA ke `index.html`.
 - `package.json` root — npm workspaces supaya Vercel memasang kedua app.
   `vercel-build` menjalankan migrasi Drizzle lalu build frontend.
 

@@ -19,3 +19,4 @@ SCR-*.png
 
 *.log
 .vercel
+.env*.local
